@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Image Ranker</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0; /* Reset default body margin */
+            padding: 20px; /* Add some padding to the body */
+            background-color: #f4f4f4; /* Add a subtle background color */
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center; /* Center headings */
+        }
+        .image-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px; /* Increased gap for better spacing */
+            margin: 20px auto; /* Center the container and add vertical margin */
+            padding: 15px; /* Add padding inside the container */
+            border: 1px solid #ddd; /* Add a subtle border */
+            border-radius: 8px; /* Rounded corners */
+            background-color: #fff; /* White background for the container */
+            /* Ensure container takes up more width */
+            width: 90%; /* Set a percentage width */
+            max-width: 1200px; /* Set a maximum width for larger screens */
+            justify-content: center; /* Center images within the container */
+        }
+        .image-item {
+            cursor: grab;
+            border: 2px solid transparent;
+            transition: transform 0.2s ease-in-out; /* Add a subtle hover effect */
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.2); /* Add a subtle shadow */
+            /* Adjust the image sizing */
+            display: block; /* Ensure image is a block element */
+            width: 100%; /* Allow image to take up container width */
+            height: auto; /* Maintain aspect ratio */
+            max-width: 250px; /* Adjusted max-width - experiment with this */
+            object-fit: cover; /* Ensure image covers the area without stretching unnaturally */
+            border-radius: 4px; /* Rounded corners for images */
+        }
+         .image-item:hover {
+            transform: scale(1.03); /* Slightly enlarge on hover */
+        }
+        .ranking-area {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            min-height: 150px; /* Increased minimum height */
+            display: flex;
+            gap: 20px; /* Increased gap */
+            flex-wrap: wrap;
+            align-items: center; /* Vertically center items in ranking area */
+            justify-content: center; /* Center items in ranking area */
+            margin: 20px auto; /* Center the container and add vertical margin */
+            width: 90%; /* Set a percentage width */
+            max-width: 1200px; /* Set a maximum width */
+             border-radius: 8px; /* Rounded corners */
+             background-color: #fff; /* White background for the container */
+        }
+        .ranking-area .image-item {
+            border: 2px solid green;
+        }
+        .button-container {
+            margin-top: 30px; /* Increased margin */
+            display: flex;
+            gap: 15px; /* Increased gap */
+            justify-content: center; /* Center buttons */
+             margin-bottom: 30px; /* Add margin below buttons */
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #5cb85c; /* Green button */
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+         button:hover {
+            background-color: #4cae4c;
+        }
+        #leaderboard {
+            margin: 30px auto; /* Center the leaderboard and add margin */
+            list-style: none; /* Remove default list bullets */
+            padding: 0;
+            width: 90%; /* Set a percentage width */
+            max-width: 800px; /* Set a maximum width */
+        }
+        #leaderboard li {
+            background-color: #e9e9e9; /* Light grey background */
+            border: 1px solid #ddd;
+            margin-bottom: 8px;
+            padding: 10px;
+            border-radius: 4px;
+            display: flex; /* Use flexbox for list items */
+            justify-content: space-between; /* Space out filename and points */
+            align-items: center;
+        }
+         #leaderboard li:nth-child(odd) {
+            background-color: #f9f9f9; /* Alternate row color */
+         }
+    </style>
+</head>
+<body>
+    <h1>Rank Images</h1>
+
+    <h2>Images to Rank</h2>
+    <div id="imagesToRank" class="image-container">
+        <!-- Images will be loaded here -->
+    </div>
+
+    <h2>Ranking Area</h2>
+    <div id="rankingArea" class="ranking-area" ondrop="drop(event)" ondragover="allowDrop(event)">
+        <!-- Dropped images will appear here -->
+    </div>
+
+    <div class="button-container">
+        <button onclick="submitRanking()">Submit Ranking</button>
+        <button onclick="getNextBatch()">Get Next Batch</button>
+        <button onclick="saveProgress()">Save Progress</button>
+        <button onclick="loadProgress()">Load Progress</button>
+    </div>
+
+
+    <h2>Leaderboard</h2>
+    <ul id="leaderboard">
+        <!-- Leaderboard will be updated here -->
+    </ul>
+
+    <script>
+        let currentImages = []; // To store the current batch of images
+
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+
+        function drag(event) {
+            event.dataTransfer.setData("text", event.target.id);
+        }
+
+        function drop(event) {
+            event.preventDefault();
+            const data = event.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(data);
+            const rankingArea = document.getElementById("rankingArea");
+
+            // Check if the dropped element is an image-item from the imagesToRank area
+            if (draggedElement && draggedElement.classList.contains('image-item') && draggedElement.parentElement.id === 'imagesToRank') {
+                rankingArea.appendChild(draggedElement);
+            }
+        }
+
+        function displayImages(imageFilenames) {
+            const imagesToRankDiv = document.getElementById('imagesToRank');
+            // Don't clear previous images here if we want to see remaining images from a batch
+            // imagesToRankDiv.innerHTML = ''; // Clear previous images
+            currentImages = imageFilenames; // Store current batch
+
+            // Remove any images from imagesToRank that are NOT in the current batch
+            Array.from(imagesToRankDiv.children).forEach(imgElement => {
+                if (!imageFilenames.includes(imgElement.alt)) {
+                    imgElement.remove();
+                }
+            });
+
+
+            imageFilenames.forEach(filename => {
+                 // Prevent adding the same image multiple times if it's already there
+                if (!document.querySelector(`#imagesToRank img[alt='${filename}']`)) {
+                    const img = document.createElement('img');
+                    img.src = `/image/${filename}`; // Flask route to serve images
+                    img.alt = filename;
+                    img.classList.add('image-item');
+                    img.draggable = true;
+                    img.id = `img-${filename.replace(/[^a-zA-Z0-9]/g, '-')}`; // Create a valid ID
+                    img.ondragstart = function(event) { drag(event); };
+                    // Removed the fixed width setting here to let CSS control it
+                    // img.style.width = '100px'; // Example size, adjust as needed
+                    imagesToRankDiv.appendChild(img);
+                }
+            });
+        }
+
+        function submitRanking() {
+            const rankingArea = document.getElementById('rankingArea');
+            const rankedImages = Array.from(rankingArea.children).map(img => img.alt);
+
+            if (rankedImages.length !== 5) {
+                alert("Please rank exactly 5 images.");
+                return;
+            }
+
+            fetch('/rank', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ rankedImages: rankedImages }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Ranking submitted:', data);
+                updateLeaderboard(data.leaderboard);
+                // Clear the ranking area after submission
+                rankingArea.innerHTML = '';
+                // Remove ranked images from the imagesToRank area
+                rankedImages.forEach(rankedFilename => {
+                    const rankedImgElement = document.querySelector(`#imagesToRank img[alt='${rankedFilename}']`);
+                    if (rankedImgElement) {
+                        rankedImgElement.remove();
+                    }
+                });
+
+            })
+            .catch((error) => {
+                console.error('Error submitting ranking:', error);
+            });
+        }
+
+         function updateLeaderboard(leaderboardData) {
+            const leaderboardList = document.getElementById('leaderboard');
+            leaderboardList.innerHTML = ''; // Clear current leaderboard
+
+            // Sort leaderboard by points in descending order
+            leaderboardData.sort((a, b) => b.points - a.points);
+
+            leaderboardData.forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${item.filename}: ${item.points} points`;
+                leaderboardList.appendChild(listItem);
+            });
+        }
+
+
+        function getNextBatch() {
+             fetch('/next_batch')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.images.length > 0) {
+                        displayImages(data.images);
+                         const rankingArea = document.getElementById('rankingArea');
+                         rankingArea.innerHTML = ''; // Clear ranking area for the new batch
+                    } else {
+                        alert("All images have been ranked or no more images available.");
+                    }
+                    // Always update the leaderboard when getting a new batch in case points were loaded
+                     fetch('/leaderboard') // Fetch the latest leaderboard data
+                        .then(response => response.json())
+                        .then(data => {
+                            updateLeaderboard(data.leaderboard);
+                        })
+                        .catch((error) => {
+                            console.error('Error fetching leaderboard:', error);
+                        });
+                })
+                .catch((error) => {
+                    console.error('Error fetching next batch:', error);
+                });
+        }
+
+        function saveProgress() {
+            fetch('/save_progress', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+            })
+            .catch((error) => {
+                console.error('Error saving progress:', error);
+                alert("Failed to save progress.");
+            });
+        }
+
+        function loadProgress() {
+            fetch('/load_progress', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                updateLeaderboard(data.leaderboard); // Update leaderboard after loading
+                displayImages(data.images); // Display the next batch after loading
+                 const rankingArea = document.getElementById('rankingArea');
+                 rankingArea.innerHTML = ''; // Clear ranking area on load
+            })
+            .catch((error) => {
+                console.error('Error loading progress:', error);
+                alert("Failed to load progress or no saved progress found.");
+            });
+        }
+
+
+        // Initial load of images and leaderboard
+        loadProgress(); // Try loading saved state first
+
+    </script>
+</body>
+</html>
