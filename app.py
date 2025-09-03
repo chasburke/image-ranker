@@ -3,10 +3,18 @@ import random
 import json
 import sqlite3
 import click # Import click for CLI commands
-from flask import Flask, render_template, request, jsonify, send_from_directory, g
+from flask import Flask, render_template, request, jsonify, send_from_directory, g, session
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Configure a secret key for session management
+# IMPORTANT: Replace with a real secret key in production!
+# When deploying to Render and setting SECRET_KEY as an environment variable,
+# Flask automatically reads it from the environment.
+# Remove or comment out this line when setting SECRET_KEY via environment variables.
+app.config['SECRET_KEY'] = 'your_very_secret_key_here'
+
 
 # Configure the folder where images are stored
 # Make sure this path is correct for your local environment
@@ -52,13 +60,16 @@ def init_db_command():
 
 # --- End Database Setup ---
 
+# Removed presented_images set as ranking is now persistent in DB
 # Re-initialize a set to keep track of presented images for the current session
-# This state is NOT persistent across server restarts or different users/browsers
-presented_images = set()
+# This state will now be stored in Flask's session object
 
 
 @app.route('/')
 def index():
+    # Initialize presented_images in session if it doesn't exist
+    if 'presented_images' not in session:
+        session['presented_images'] = []
     return render_template('index.html')
 
 @app.route('/image/<filename>')
@@ -70,6 +81,9 @@ def serve_image(filename):
 
 @app.route('/next_batch')
 def next_batch():
+    # Get presented images from session
+    presented_images = set(session.get('presented_images', []))
+
     # Get all available image files
     all_images = os.listdir(app.config['IMAGE_FOLDER'])
     # Filter out macOS-specific files
@@ -87,6 +101,7 @@ def next_batch():
 
     # Add the selected images to the set of presented images for the current session
     presented_images.update(batch_images)
+    session['presented_images'] = list(presented_images) # Store updated set back in session
 
     return jsonify({"images": batch_images})
 
@@ -131,16 +146,10 @@ def get_leaderboard():
 
 if __name__ == '__main__':
     # When running directly (e.g., python app.py), initialize the db
-    # Note: For flask run, use 'flask --app app.py init-db' first
     with app.app_context():
          init_db()
-
-    # Removed loading presented images state on startup
 
     # Run the Flask application
     # For local development, you can run it directly using 'python app.py'
     # or use 'flask --app app.py run' after initializing the db with 'flask --app app.py init-db'
     app.run(debug=True) # Set debug=False for production
-
-    # If you were deploying to a production server, you would typically
-    # use a WSGI server like Gunicorn or uWSGI instead of app.run()
