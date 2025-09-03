@@ -2,17 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Image Ranker</title>
+    <title>AI Creativity Study</title> <!-- Changed title -->
     <style>
         body {
-            font-family: sans-serif;
+            font-family: 'Arial', sans-serif; /* Example fashionable font, you can replace with others like 'Roboto', 'Lato', 'Open Sans' */
             margin: 0; /* Reset default body margin */
             padding: 20px; /* Add some padding to the body */
-            background-color: #f4f4f4; /* Add a subtle background color */
+            background-color: #e0f7fa; /* Light Cyan - Pastel background color */
+            color: #333; /* Default text color */
         }
         h1, h2 {
-            color: #333;
+            color: #00796b; /* Dark Cyan - Pastel heading color */
             text-align: center; /* Center headings */
+        }
+         h1 {
+             margin-bottom: 5px; /* Reduce space below main title */
+         }
+        .instructions {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #555;
+            font-size: 1.1em; /* Slightly larger instruction text */
+            line-height: 1.5; /* Improve readability */
         }
         .image-container {
             display: flex;
@@ -20,9 +31,9 @@
             gap: 20px; /* Increased gap for better spacing */
             margin: 20px auto; /* Center the container and add vertical margin */
             padding: 15px; /* Add padding inside the container */
-            border: 1px solid #ddd; /* Add a subtle border */
+            border: 1px solid #b2dfdb; /* Light Teal - Pastel border */
             border-radius: 8px; /* Rounded corners */
-            background-color: #fff; /* White background for the container */
+            background-color: #ffffff; /* White background for the container */
             /* Ensure container takes up more width */
             width: 90%; /* Set a percentage width */
             max-width: 1200px; /* Set a maximum width for larger screens */
@@ -45,7 +56,7 @@
             transform: scale(1.03); /* Slightly enlarge on hover */
         }
         .ranking-area {
-            border: 2px dashed #ccc;
+            border: 2px dashed #b2dfdb; /* Light Teal - Pastel dashed border */
             padding: 20px;
             min-height: 150px; /* Increased minimum height */
             display: flex;
@@ -57,10 +68,10 @@
             width: 90%; /* Set a percentage width */
             max-width: 1200px; /* Set a maximum width */
              border-radius: 8px; /* Rounded corners */
-             background-color: #fff; /* White background for the container */
+             background-color: #ffffff; /* White background for the container */
         }
         .ranking-area .image-item {
-            border: 2px solid green;
+            border: 2px solid #00796b; /* Dark Cyan - Pastel border for ranked images */
         }
         .button-container {
             margin-top: 30px; /* Increased margin */
@@ -75,12 +86,12 @@
             cursor: pointer;
             border: none;
             border-radius: 5px;
-            background-color: #5cb85c; /* Green button */
+            background-color: #4db6ac; /* Teal - Pastel button color */
             color: white;
             transition: background-color 0.3s ease;
         }
          button:hover {
-            background-color: #4cae4c;
+            background-color: #26a69a; /* Darker Teal on hover */
         }
         #leaderboard {
             margin: 30px auto; /* Center the leaderboard and add margin */
@@ -90,8 +101,8 @@
             max-width: 800px; /* Set a maximum width */
         }
         #leaderboard li {
-            background-color: #e9e9e9; /* Light grey background */
-            border: 1px solid #ddd;
+            background-color: #e0f2f7; /* Light Blue - Pastel background */
+            border: 1px solid #b2ebf2; /* Light Cyan - Pastel border */
             margin-bottom: 8px;
             padding: 10px;
             border-radius: 4px;
@@ -100,19 +111,27 @@
             align-items: center;
         }
          #leaderboard li:nth-child(odd) {
-            background-color: #f9f9f9; /* Alternate row color */
+            background-color: #ffffff; /* Alternate row color */
+         }
+         #leaderboard li img {
+             margin-right: 10px;
+             width: 40px; /* Thumbnail size */
+             height: auto;
+             border-radius: 4px; /* Rounded corners for thumbnails */
          }
     </style>
 </head>
 <body>
-    <h1>Rank Images</h1>
+    <h1>AI Creativity Study</h1> <!-- Changed main title -->
 
     <h2>Images to Rank</h2>
+    <p class="instructions">Drag 5 images from the area below into the Ranking Area. Place your most favorite image on the left, and your least favorite on the right.</p> <!-- Updated instructions -->
     <div id="imagesToRank" class="image-container">
         <!-- Images will be loaded here -->
     </div>
 
     <h2>Ranking Area</h2>
+    <p class="instructions">This is where you will drop your ranked images. Ensure there are exactly 5 images here before submitting.</p> <!-- Added instruction for ranking area -->
     <div id="rankingArea" class="ranking-area" ondrop="drop(event)" ondragover="allowDrop(event)">
         <!-- Dropped images will appear here -->
     </div>
@@ -120,8 +139,7 @@
     <div class="button-container">
         <button onclick="submitRanking()">Submit Ranking</button>
         <button onclick="getNextBatch()">Get Next Batch</button>
-        <button onclick="saveProgress()">Save Progress</button>
-        <button onclick="loadProgress()">Load Progress</button>
+        <!-- Removed Save and Load buttons -->
     </div>
 
 
@@ -149,38 +167,29 @@
 
             // Check if the dropped element is an image-item from the imagesToRank area
             if (draggedElement && draggedElement.classList.contains('image-item') && draggedElement.parentElement.id === 'imagesToRank') {
-                rankingArea.appendChild(draggedElement);
+                 // Optional: Limit the number of items in the ranking area if needed
+                 // if (rankingArea.children.length < 5) {
+                    rankingArea.appendChild(draggedElement);
+                 // } else {
+                 //    alert("You can only rank 5 images at a time.");
+                 // }
             }
         }
 
         function displayImages(imageFilenames) {
             const imagesToRankDiv = document.getElementById('imagesToRank');
-            // Don't clear previous images here if we want to see remaining images from a batch
-            // imagesToRankDiv.innerHTML = ''; // Clear previous images
+            imagesToRankDiv.innerHTML = ''; // Clear previous images when showing a new batch
             currentImages = imageFilenames; // Store current batch
 
-            // Remove any images from imagesToRank that are NOT in the current batch
-            Array.from(imagesToRankDiv.children).forEach(imgElement => {
-                if (!imageFilenames.includes(imgElement.alt)) {
-                    imgElement.remove();
-                }
-            });
-
-
             imageFilenames.forEach(filename => {
-                 // Prevent adding the same image multiple times if it's already there
-                if (!document.querySelector(`#imagesToRank img[alt='${filename}']`)) {
-                    const img = document.createElement('img');
-                    img.src = `/image/${filename}`; // Flask route to serve images
-                    img.alt = filename;
-                    img.classList.add('image-item');
-                    img.draggable = true;
-                    img.id = `img-${filename.replace(/[^a-zA-Z0-9]/g, '-')}`; // Create a valid ID
-                    img.ondragstart = function(event) { drag(event); };
-                    // Removed the fixed width setting here to let CSS control it
-                    // img.style.width = '100px'; // Example size, adjust as needed
-                    imagesToRankDiv.appendChild(img);
-                }
+                const img = document.createElement('img');
+                img.src = `/image/${filename}`; // Flask route to serve images
+                img.alt = filename;
+                img.classList.add('image-item');
+                img.draggable = true;
+                img.id = `img-${filename.replace(/[^a-zA-Z0-9]/g, '-')}`; // Create a valid ID
+                img.ondragstart = function(event) { drag(event); };
+                imagesToRankDiv.appendChild(img);
             });
         }
 
@@ -206,17 +215,13 @@
                 updateLeaderboard(data.leaderboard);
                 // Clear the ranking area after submission
                 rankingArea.innerHTML = '';
-                // Remove ranked images from the imagesToRank area
-                rankedImages.forEach(rankedFilename => {
-                    const rankedImgElement = document.querySelector(`#imagesToRank img[alt='${rankedFilename}']`);
-                    if (rankedImgElement) {
-                        rankedImgElement.remove();
-                    }
-                });
+                 // Automatically get the next batch after submission
+                 getNextBatch();
 
             })
             .catch((error) => {
                 console.error('Error submitting ranking:', error);
+                 alert("Error submitting ranking.");
             });
         }
 
@@ -229,7 +234,20 @@
 
             leaderboardData.forEach(item => {
                 const listItem = document.createElement('li');
-                listItem.textContent = `${item.filename}: ${item.points} points`;
+                 // Include image thumbnail and filename in the leaderboard
+                 const img = document.createElement('img');
+                 img.src = `/image/${item.filename}`; // Serve thumbnail
+                 img.alt = item.filename;
+                 img.style.width = '40px'; // Thumbnail size
+                 img.style.height = 'auto';
+                 img.style.marginRight = '10px';
+
+                const textSpan = document.createElement('span');
+                textSpan.textContent = `${item.filename}: ${item.points} points`;
+
+                listItem.appendChild(img);
+                listItem.appendChild(textSpan);
+
                 leaderboardList.appendChild(listItem);
             });
         }
@@ -245,9 +263,12 @@
                          rankingArea.innerHTML = ''; // Clear ranking area for the new batch
                     } else {
                         alert("All images have been ranked or no more images available.");
+                         // Optionally display a "Task Complete" message or similar
+                         const imagesToRankDiv = document.getElementById('imagesToRank');
+                         imagesToRankDiv.innerHTML = '<h3>All images have been ranked!</h3>';
                     }
-                    // Always update the leaderboard when getting a new batch in case points were loaded
-                     fetch('/leaderboard') // Fetch the latest leaderboard data
+                     // Always fetch and update the leaderboard when getting a new batch
+                     fetch('/leaderboard')
                         .then(response => response.json())
                         .then(data => {
                             updateLeaderboard(data.leaderboard);
@@ -258,44 +279,15 @@
                 })
                 .catch((error) => {
                     console.error('Error fetching next batch:', error);
+                     alert("Error fetching next batch.");
                 });
         }
 
-        function saveProgress() {
-            fetch('/save_progress', {
-                method: 'POST',
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.message);
-            })
-            .catch((error) => {
-                console.error('Error saving progress:', error);
-                alert("Failed to save progress.");
-            });
-        }
-
-        function loadProgress() {
-            fetch('/load_progress', {
-                method: 'POST',
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.message);
-                updateLeaderboard(data.leaderboard); // Update leaderboard after loading
-                displayImages(data.images); // Display the next batch after loading
-                 const rankingArea = document.getElementById('rankingArea');
-                 rankingArea.innerHTML = ''; // Clear ranking area on load
-            })
-            .catch((error) => {
-                console.error('Error loading progress:', error);
-                alert("Failed to load progress or no saved progress found.");
-            });
-        }
+        // Removed saveProgress and loadProgress functions
 
 
-        // Initial load of images and leaderboard
-        loadProgress(); // Try loading saved state first
+        // Initial load of images and leaderboard when the page loads
+        getNextBatch();
 
     </script>
 </body>
